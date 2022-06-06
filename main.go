@@ -10,6 +10,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
 type Book struct {
@@ -57,6 +58,22 @@ func InsertBook(w http.ResponseWriter, r *http.Request) {
 
 	var book Book
 	err := json.NewDecoder(r.Body).Decode(&book)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	book.Id, err = gonanoid.New()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	createBookQuery := `
+	INSERT INTO book(id, name, year, author, summary, publisher, page_count, read_page, reading)
+	VALUES (:id, :name, :year, :author, :summary, :publisher, :page_count, :read_page, :reading)
+	`
+	_, err = db.NamedExec(createBookQuery, &book)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
