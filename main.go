@@ -28,6 +28,12 @@ type Book struct {
 	UpdatedAt string `json:"updatedAt"`
 }
 
+type Response struct {
+	Status  string `json:"status"`
+	Message string `json:"message,omitempty"`
+	Data    any    `json:"data,omitempty"`
+}
+
 var db *sqlx.DB
 
 func main() {
@@ -78,4 +84,20 @@ func InsertBook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	responseData := Response{
+		Status:  "success",
+		Message: "Buku berhasil ditambahkan",
+		Data: struct {
+			BookId string `json:"bookId"`
+		}{BookId: book.Id},
+	}
+
+	jsonData, err := json.Marshal(responseData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(jsonData)
 }
