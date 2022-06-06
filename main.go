@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
+
+	"github.com/gorilla/mux"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -23,5 +26,11 @@ func main() {
 		log.Fatal(pingErr)
 	}
 	fmt.Println("DB Connected!")
+
+	r := mux.NewRouter()
+
+
+	fmt.Println("server started at localhost:9000")
+	http.ListenAndServe(":9000", r)
 }
 }
