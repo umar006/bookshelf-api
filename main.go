@@ -29,8 +29,13 @@ func main() {
 
 	r := mux.NewRouter()
 
+	r.HandleFunc("/books", InsertBook).Methods("POST")
 
 	fmt.Println("server started at localhost:9000")
 	http.ListenAndServe(":9000", r)
 }
+
+func InsertBook(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusCreated)
 }
