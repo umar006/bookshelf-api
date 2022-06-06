@@ -60,7 +60,8 @@ func main() {
 
 func InsertBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusCreated)
+
+	responseData := Response{}
 
 	var book Book
 	err := json.NewDecoder(r.Body).Decode(&book)
@@ -69,28 +70,35 @@ func InsertBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	book.Id, err = gonanoid.New()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	if book.Name == "" {
+		responseData.Status = "fail"
+		responseData.Message = "Gagal menambahkan buku. Mohon isi nama buku"
 
-	createBookQuery := `
-	INSERT INTO book(id, name, year, author, summary, publisher, page_count, read_page, reading)
-	VALUES (:id, :name, :year, :author, :summary, :publisher, :page_count, :read_page, :reading)
-	`
-	_, err = db.NamedExec(createBookQuery, &book)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+		w.WriteHeader(http.StatusBadRequest)
+	} else {
+		book.Id, err = gonanoid.New()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-	responseData := Response{
-		Status:  "success",
-		Message: "Buku berhasil ditambahkan",
-		Data: struct {
+		createBookQuery := `
+            INSERT INTO book(id, name, year, author, summary, publisher, page_count, read_page, reading)
+            VALUES (:id, :name, :year, :author, :summary, :publisher, :page_count, :read_page, :reading)
+        `
+		_, err = db.NamedExec(createBookQuery, &book)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		responseData.Status = "success"
+		responseData.Message = "Buku berhasil ditambahkan"
+		responseData.Data = struct {
 			BookId string `json:"bookId"`
-		}{BookId: book.Id},
+		}{book.Id}
+
+		w.WriteHeader(http.StatusCreated)
 	}
 
 	jsonData, err := json.Marshal(responseData)
