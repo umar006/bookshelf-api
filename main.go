@@ -31,6 +31,7 @@ func main() {
 
 	r := mux.NewRouter()
 
+	r.HandleFunc("/books", GetAllBooks).Methods("GET")
 	r.HandleFunc("/books", InsertBook).Methods("POST")
 
 	fmt.Println("server started at localhost:9000")
@@ -83,6 +84,42 @@ func InsertBook(w http.ResponseWriter, r *http.Request) {
 		}{book.Id}
 
 		w.WriteHeader(http.StatusCreated)
+	}
+
+	jsonData, err := json.Marshal(responseData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(jsonData)
+
+func GetAllBooks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	rows, err := db.Queryx("SELECT id, name, publisher FROM book")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var books = []map[string]interface{}{}
+	for rows.Next() {
+		var book = map[string]interface{}{}
+		err = rows.MapScan(book)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		books = append(books, book)
+	}
+
+	responseData := Response{
+		Status: "success",
+		Data: struct {
+			Books []map[string]interface{} `json:"books"`
+		}{books},
 	}
 
 	jsonData, err := json.Marshal(responseData)
