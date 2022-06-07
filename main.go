@@ -75,6 +75,11 @@ func InsertBook(w http.ResponseWriter, r *http.Request) {
 		responseData.Message = "Gagal menambahkan buku. Mohon isi nama buku"
 
 		w.WriteHeader(http.StatusBadRequest)
+	} else if book.ReadPage > book.PageCount {
+		responseData.Status = "fail"
+		responseData.Message = "Gagal menambahkan buku. readPage tidak boleh lebih besar dari pageCount"
+
+		w.WriteHeader(http.StatusBadRequest)
 	} else {
 		book.Id, err = gonanoid.New()
 		if err != nil {
