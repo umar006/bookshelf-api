@@ -180,29 +180,36 @@ func UpdateBookById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var bookId string
-	err = db.QueryRowx("SELECT id FROM book WHERE id=$1", vars["bookId"]).Scan(&bookId)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	book["id"] = bookId
+	responseData := Response{}
 
-	updateBookQuery := `
-        UPDATE book
-        SET name=:name,year=:year,author=:author,summary=:summary,publisher=:publisher,
-            page_count=:pageCount,read_page=:readPage,reading=:reading
-        WHERE id=:id
-    `
-	_, err = db.NamedExec(updateBookQuery, book)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	if book["name"] == "" || book["name"] == nil {
+		responseData.Status = "fail"
+		responseData.Message = "Gagal memperbarui buku. Mohon isi nama buku"
 
-	responseData := Response{
-		Status:  "success",
-		Message: "Buku berhasil diperbarui",
+		w.WriteHeader(http.StatusBadRequest)
+	} else {
+		var bookId string
+		err = db.QueryRowx("SELECT id FROM book WHERE id=$1", vars["bookId"]).Scan(&bookId)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		book["id"] = bookId
+
+		updateBookQuery := `
+            UPDATE book
+            SET name=:name,year=:year,author=:author,summary=:summary,publisher=:publisher,
+                page_count=:pageCount,read_page=:readPage,reading=:reading
+            WHERE id=:id
+        `
+		_, err = db.NamedExec(updateBookQuery, book)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		responseData.Status = "success"
+		responseData.Message = "Buku berhasil diperbarui"
 	}
 
 	jsonData, err := json.Marshal(responseData)
