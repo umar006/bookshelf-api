@@ -35,6 +35,7 @@ func main() {
 	r.HandleFunc("/books", GetAllBooks).Methods("GET")
 	r.HandleFunc("/books/{bookId}", GetBookById).Methods("GET")
 	r.HandleFunc("/books", InsertBook).Methods("POST")
+	r.HandleFunc("/books/{bookId}", UpdateBookById).Methods("PUT")
 
 	fmt.Println("server started at localhost:9000")
 	http.ListenAndServe(":9000", r)
@@ -95,6 +96,7 @@ func InsertBook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(jsonData)
+}
 
 func GetAllBooks(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -155,6 +157,52 @@ func GetBookById(w http.ResponseWriter, r *http.Request) {
 		responseData.Data = struct {
 			Book Book `json:"book"`
 		}{book}
+	}
+
+	jsonData, err := json.Marshal(responseData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(jsonData)
+}
+
+func UpdateBookById(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	vars := mux.Vars(r)
+
+	var book map[string]any
+	err := json.NewDecoder(r.Body).Decode(&book)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var bookId string
+	err = db.QueryRowx("SELECT id FROM book WHERE id=$1", vars["bookId"]).Scan(&bookId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	book["id"] = bookId
+
+	updateBookQuery := `
+        UPDATE book
+        SET name=:name,year=:year,author=:author,summary=:summary,publisher=:publisher,
+            page_count=:pageCount,read_page=:readPage,reading=:reading
+        WHERE id=:id
+    `
+	_, err = db.NamedExec(updateBookQuery, book)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	responseData := Response{
+		Status:  "success",
+		Message: "Buku berhasil diperbarui",
 	}
 
 	jsonData, err := json.Marshal(responseData)
