@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -32,6 +33,7 @@ func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/books", GetAllBooks).Methods("GET")
+	r.HandleFunc("/books/{bookId}", GetBookById).Methods("GET")
 	r.HandleFunc("/books", InsertBook).Methods("POST")
 
 	fmt.Println("server started at localhost:9000")
@@ -94,7 +96,7 @@ func InsertBook(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(jsonData)
 
-func GetAllBooks(w http.ResponseWriter, r *http.Request) {
+func GetAllBooks(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
 	rows, err := db.Queryx("SELECT id, name, publisher FROM book")
@@ -120,6 +122,39 @@ func GetAllBooks(w http.ResponseWriter, r *http.Request) {
 		Data: struct {
 			Books []map[string]interface{} `json:"books"`
 		}{books},
+	}
+
+	jsonData, err := json.Marshal(responseData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(jsonData)
+}
+
+func GetBookById(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	vars := mux.Vars(r)
+
+	responseData := Response{}
+
+	var book Book
+	err := db.QueryRowx("SELECT * FROM book WHERE id=$1", vars["bookId"]).StructScan(&book)
+	if err != nil && err != sql.ErrNoRows {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else if err != nil && err == sql.ErrNoRows {
+		responseData.Status = "fail"
+		responseData.Message = "Buku tidak ditemukan"
+
+		w.WriteHeader(http.StatusNotFound)
+	} else {
+		responseData.Status = "success"
+		responseData.Data = struct {
+			Book Book `json:"book"`
+		}{book}
 	}
 
 	jsonData, err := json.Marshal(responseData)
