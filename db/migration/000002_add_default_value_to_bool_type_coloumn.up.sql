@@ -1,0 +1,2 @@
+ALTER TABLE book ALTER COLUMN finished SET DEFAULT false;
+ALTER TABLE book ALTER COLUMN reading SET DEFAULT false;
