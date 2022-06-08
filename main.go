@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -13,24 +12,14 @@ import (
 	_ "github.com/lib/pq"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 
+	dbx "umar006/bookshelf-api/db"
 	"umar006/bookshelf-api/pkg"
 )
 
 var db *sqlx.DB
 
 func main() {
-	var err error
-	connStr := "postgres://root:root@localhost/bookshelf?sslmode=disable"
-	db, err = sqlx.Open("postgres", connStr)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	pingErr := db.Ping()
-	if pingErr != nil {
-		log.Fatal(pingErr)
-	}
-	fmt.Println("DB Connected!")
+	db = dbx.ConnectDB()
 
 	r := mux.NewRouter()
 
