@@ -237,15 +237,23 @@ func DeleteBookById(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 
-	_, err := db.Exec("DELETE FROM book WHERE id=$1", vars["bookId"])
+	result, err := db.Exec("DELETE FROM book WHERE id=$1", vars["bookId"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	responseData := Response{
-		Status:  "success",
-		Message: "Buku berhasil dihapus",
+	responseData := Response{}
+
+	affectedRow, _ := result.RowsAffected()
+	if affectedRow == 1 {
+		responseData.Status = "success"
+		responseData.Message = "Buku berhasil dihapus"
+	} else {
+		responseData.Status = "fail"
+		responseData.Message = "Buku gagal dihapus. Id tidak ditemukan"
+
+		w.WriteHeader(http.StatusNotFound)
 	}
 
 	jsonData, err := json.Marshal(responseData)
