@@ -36,6 +36,7 @@ func main() {
 	r.HandleFunc("/books/{bookId}", GetBookById).Methods("GET")
 	r.HandleFunc("/books", InsertBook).Methods("POST")
 	r.HandleFunc("/books/{bookId}", UpdateBookById).Methods("PUT")
+	r.HandleFunc("/books/{bookId}", DeleteBookById).Methods("DELETE")
 
 	fmt.Println("server started at localhost:9000")
 	http.ListenAndServe(":9000", r)
@@ -193,33 +194,29 @@ func UpdateBookById(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusBadRequest)
 	} else {
-		var bookId string
-		err = db.QueryRowx("SELECT id FROM book WHERE id=$1", vars["bookId"]).Scan(&bookId)
-		if err != nil && err != sql.ErrNoRows {
+		book["id"] = vars["bookId"]
+
+		updateBookQuery := `
+            UPDATE book
+            SET name=:name,year=:year,author=:author,summary=:summary,publisher=:publisher,
+                page_count=:pageCount,read_page=:readPage,reading=:reading
+            WHERE id=:id
+        `
+		result, err := db.NamedExec(updateBookQuery, book)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
-		} else if err != nil && err == sql.ErrNoRows {
+		}
+
+		affectedRow, _ := result.RowsAffected()
+		if affectedRow == 1 {
+			responseData.Status = "success"
+			responseData.Message = "Buku berhasil diperbarui"
+		} else {
 			responseData.Status = "fail"
 			responseData.Message = "Gagal memperbarui buku. Id tidak ditemukan"
 
 			w.WriteHeader(http.StatusNotFound)
-		} else {
-			book["id"] = bookId
-
-			updateBookQuery := `
-                UPDATE book
-                SET name=:name,year=:year,author=:author,summary=:summary,publisher=:publisher,
-                    page_count=:pageCount,read_page=:readPage,reading=:reading
-                WHERE id=:id
-            `
-			_, err = db.NamedExec(updateBookQuery, book)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			responseData.Status = "success"
-			responseData.Message = "Buku berhasil diperbarui"
 		}
 	}
 
