@@ -12,6 +12,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	gonanoid "github.com/matoous/go-nanoid/v2"
+
+	"umar006/bookshelf-api/pkg"
 )
 
 var db *sqlx.DB
@@ -45,14 +47,14 @@ func main() {
 func InsertBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	responseData := Response{}
-
 	var book Book
 	err := json.NewDecoder(r.Body).Decode(&book)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	var responseData pkg.Response
 
 	if book.Name == "" {
 		responseData.Status = "fail"
@@ -102,6 +104,8 @@ func InsertBook(w http.ResponseWriter, r *http.Request) {
 func GetAllBooks(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
+	var responseData pkg.Response
+
 	rows, err := db.Queryx("SELECT id, name, publisher FROM book")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -120,12 +124,10 @@ func GetAllBooks(w http.ResponseWriter, _ *http.Request) {
 		books = append(books, book)
 	}
 
-	responseData := Response{
-		Status: "success",
-		Data: struct {
-			Books []map[string]interface{} `json:"books"`
-		}{books},
-	}
+	responseData.Status = "success"
+	responseData.Data = struct {
+		Books []map[string]interface{} `json:"books"`
+	}{books}
 
 	jsonData, err := json.Marshal(responseData)
 	if err != nil {
@@ -141,7 +143,7 @@ func GetBookById(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 
-	responseData := Response{}
+	var responseData pkg.Response
 
 	var book Book
 	err := db.QueryRowx("SELECT * FROM book WHERE id=$1", vars["bookId"]).StructScan(&book)
@@ -181,7 +183,7 @@ func UpdateBookById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseData := Response{}
+	var responseData pkg.Response
 
 	if book["name"] == "" || book["name"] == nil {
 		responseData.Status = "fail"
@@ -240,7 +242,7 @@ func DeleteBookById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseData := Response{}
+	var responseData pkg.Response
 
 	affectedRow, _ := result.RowsAffected()
 	if affectedRow == 1 {
