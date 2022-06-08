@@ -39,10 +39,11 @@ func InsertBook(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		book.Finished = book.PageCount == book.ReadPage
 
 		createBookQuery := `
-            INSERT INTO book(id, name, year, author, summary, publisher, page_count, read_page, reading)
-            VALUES (:id, :name, :year, :author, :summary, :publisher, :page_count, :read_page, :reading)
+            INSERT INTO book(id, name, year, author, summary, publisher, page_count, read_page, reading, finished)
+            VALUES (:id, :name, :year, :author, :summary, :publisher, :page_count, :read_page, :reading, :finished)
         `
 		_, err = db.NamedExec(createBookQuery, &book)
 		if err != nil {
