@@ -231,3 +231,28 @@ func UpdateBookById(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(jsonData)
 }
+
+func DeleteBookById(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	vars := mux.Vars(r)
+
+	_, err := db.Exec("DELETE FROM book WHERE id=$1", vars["bookId"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	responseData := Response{
+		Status:  "success",
+		Message: "Buku berhasil dihapus",
+	}
+
+	jsonData, err := json.Marshal(responseData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(jsonData)
+}
