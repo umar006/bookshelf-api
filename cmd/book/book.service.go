@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 
 	"umar006/bookshelf-api/pkg"
@@ -69,12 +70,32 @@ func InsertBook(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonData)
 }
 
-func GetAllBooks(w http.ResponseWriter, _ *http.Request) {
+func GetAllBooks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	queryParams := r.URL.Query()
 
 	var responseData pkg.Response
 
-	rows, err := db.Queryx("SELECT id, name, publisher FROM book")
+	var rows *sqlx.Rows
+	var err error
+	getBooksQuery := `
+        SELECT id, name, publisher
+        FROM book
+    `
+	if queryParams.Has("reading") {
+		getBooksQuery += "WHERE reading=$1"
+		rows, err = db.Queryx(getBooksQuery, queryParams.Get("reading"))
+	} else if queryParams.Has("finished") {
+		getBooksQuery += "WHERE finished=$1"
+		rows, err = db.Queryx(getBooksQuery, queryParams.Get("finished"))
+	} else if queryParams.Has("name") {
+		getBooksQuery += "WHERE name ILIKE $1"
+		rows, err = db.Queryx(getBooksQuery, "%"+queryParams.Get("name")+"%")
+	} else {
+		rows, err = db.Queryx(getBooksQuery)
+	}
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
