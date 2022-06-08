@@ -187,6 +187,11 @@ func UpdateBookById(w http.ResponseWriter, r *http.Request) {
 		responseData.Message = "Gagal memperbarui buku. Mohon isi nama buku"
 
 		w.WriteHeader(http.StatusBadRequest)
+	} else if book["readPage"].(float64) > book["pageCount"].(float64) {
+		responseData.Status = "fail"
+		responseData.Message = "Gagal memperbarui buku. readPage tidak boleh lebih besar dari pageCount"
+
+		w.WriteHeader(http.StatusBadRequest)
 	} else {
 		var bookId string
 		err = db.QueryRowx("SELECT id FROM book WHERE id=$1", vars["bookId"]).Scan(&bookId)
