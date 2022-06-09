@@ -2,15 +2,15 @@
 Simple CRUD bookshelf api. This final project from dicoding course (Belajar Membuat Aplikasi Backend untuk Pemula)
 that writen in Golang instead of Javascript for learning purpose.
 
-# Requirements
+### Requirements
 - Go 1.18
 - Postgre 14.0
 
-# Installation
+### Installation
 TBA
 
-# Run
+### Run
 TBA
 
-# Test
+### Test
 TBA
