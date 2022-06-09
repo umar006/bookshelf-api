@@ -9,8 +9,11 @@ import (
 	"github.com/jmoiron/sqlx"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 
+	"umar006/bookshelf-api/cmd/book/model"
 	"umar006/bookshelf-api/pkg"
 )
+
+type Book model.Book
 
 func InsertBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
