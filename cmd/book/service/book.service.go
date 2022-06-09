@@ -1,4 +1,4 @@
-package book
+package service
 
 import (
 	"database/sql"
@@ -7,13 +7,17 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 
 	"umar006/bookshelf-api/cmd/book/model"
+	dbx "umar006/bookshelf-api/db"
 	"umar006/bookshelf-api/pkg"
 )
 
 type Book model.Book
+
+var db *sqlx.DB = dbx.ConnectDB()
 
 func InsertBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")

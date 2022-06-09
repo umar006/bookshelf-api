@@ -2,20 +2,14 @@ package book
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 
-	dbx "umar006/bookshelf-api/db"
+	"umar006/bookshelf-api/cmd/book/service"
 )
 
-var db *sqlx.DB
-
 func Routes(r *mux.Router) {
-	db = dbx.ConnectDB()
-
-	r.HandleFunc("/books", GetAllBooks).Methods("GET")
-	r.HandleFunc("/books/{bookId}", GetBookById).Methods("GET")
-	r.HandleFunc("/books", InsertBook).Methods("POST")
-	r.HandleFunc("/books/{bookId}", UpdateBookById).Methods("PUT")
-	r.HandleFunc("/books/{bookId}", DeleteBookById).Methods("DELETE")
+	r.HandleFunc("/books", service.GetAllBooks).Methods("GET")
+	r.HandleFunc("/books/{bookId}", service.GetBookById).Methods("GET")
+	r.HandleFunc("/books", service.InsertBook).Methods("POST")
+	r.HandleFunc("/books/{bookId}", service.UpdateBookById).Methods("PUT")
+	r.HandleFunc("/books/{bookId}", service.DeleteBookById).Methods("DELETE")
 }
