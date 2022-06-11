@@ -55,3 +55,39 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(jsonData)
 }
+
+func GetAllBooks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	result, err := service.GetAllBooks(r.URL.Query())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var books = []map[string]any{}
+	for result.Next() {
+		var book = map[string]any{}
+		err = result.MapScan(book)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		books = append(books, book)
+	}
+
+	responseData := pkg.Response{
+		Status: "success",
+		Data: struct {
+			Books []map[string]any `json:"books"`
+		}{books},
+	}
+
+	jsonData, err := json.Marshal(responseData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(jsonData)
+}

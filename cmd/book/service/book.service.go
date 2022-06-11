@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"net/url"
 
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
@@ -30,14 +31,8 @@ func InsertBook(book *model.Book) (sql.Result, error) {
 	return result, err
 }
 
-func GetAllBooks(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-
-	queryParams := r.URL.Query()
-
-	var responseData pkg.Response
-
-	var rows *sqlx.Rows
+func GetAllBooks(queryParams url.Values) (*sqlx.Rows, error) {
+	var result *sqlx.Rows
 	var err error
 	getBooksQuery := `
         SELECT id, name, publisher
@@ -45,46 +40,22 @@ func GetAllBooks(w http.ResponseWriter, r *http.Request) {
     `
 	if queryParams.Has("reading") {
 		getBooksQuery += "WHERE reading=$1"
-		rows, err = db.Queryx(getBooksQuery, queryParams.Get("reading"))
+		result, err = db.Queryx(getBooksQuery, queryParams.Get("reading"))
 	} else if queryParams.Has("finished") {
 		getBooksQuery += "WHERE finished=$1"
-		rows, err = db.Queryx(getBooksQuery, queryParams.Get("finished"))
+		result, err = db.Queryx(getBooksQuery, queryParams.Get("finished"))
 	} else if queryParams.Has("name") {
 		getBooksQuery += "WHERE name ILIKE $1"
-		rows, err = db.Queryx(getBooksQuery, "%"+queryParams.Get("name")+"%")
+		result, err = db.Queryx(getBooksQuery, "%"+queryParams.Get("name")+"%")
 	} else {
-		rows, err = db.Queryx(getBooksQuery)
+		result, err = db.Queryx(getBooksQuery)
 	}
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return result, err
 	}
 
-	var books = []map[string]interface{}{}
-	for rows.Next() {
-		var book = map[string]interface{}{}
-		err = rows.MapScan(book)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		books = append(books, book)
-	}
-
-	responseData.Status = "success"
-	responseData.Data = struct {
-		Books []map[string]interface{} `json:"books"`
-	}{books}
-
-	jsonData, err := json.Marshal(responseData)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Write(jsonData)
+	return result, err
 }
 
 func GetBookById(w http.ResponseWriter, r *http.Request) {
