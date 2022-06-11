@@ -15,66 +15,19 @@ import (
 	"umar006/bookshelf-api/pkg"
 )
 
-type Book model.Book
-
 var db *sqlx.DB = dbx.ConnectDB()
 
-func InsertBook(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+func InsertBook(book *model.Book) (sql.Result, error) {
+	book.Id, _ = gonanoid.New()
+	book.Finished = book.PageCount == book.ReadPage
 
-	var book Book
-	err := json.NewDecoder(r.Body).Decode(&book)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	var responseData pkg.Response
-
-	if book.Name == "" {
-		responseData.Status = "fail"
-		responseData.Message = "Gagal menambahkan buku. Mohon isi nama buku"
-
-		w.WriteHeader(http.StatusBadRequest)
-	} else if book.ReadPage > book.PageCount {
-		responseData.Status = "fail"
-		responseData.Message = "Gagal menambahkan buku. readPage tidak boleh lebih besar dari pageCount"
-
-		w.WriteHeader(http.StatusBadRequest)
-	} else {
-		book.Id, err = gonanoid.New()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		book.Finished = book.PageCount == book.ReadPage
-
-		createBookQuery := `
+	createBookQuery := `
             INSERT INTO book(id, name, year, author, summary, publisher, page_count, read_page, reading, finished)
             VALUES (:id, :name, :year, :author, :summary, :publisher, :page_count, :read_page, :reading, :finished)
         `
-		_, err = db.NamedExec(createBookQuery, &book)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	result, err := db.NamedExec(createBookQuery, &book)
 
-		responseData.Status = "success"
-		responseData.Message = "Buku berhasil ditambahkan"
-		responseData.Data = struct {
-			BookId string `json:"bookId"`
-		}{book.Id}
-
-		w.WriteHeader(http.StatusCreated)
-	}
-
-	jsonData, err := json.Marshal(responseData)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Write(jsonData)
+	return result, err
 }
 
 func GetAllBooks(w http.ResponseWriter, r *http.Request) {
@@ -141,7 +94,7 @@ func GetBookById(w http.ResponseWriter, r *http.Request) {
 
 	var responseData pkg.Response
 
-	var book Book
+	var book model.Book
 	err := db.QueryRowx("SELECT * FROM book WHERE id=$1", vars["bookId"]).StructScan(&book)
 	if err != nil && err != sql.ErrNoRows {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -154,7 +107,7 @@ func GetBookById(w http.ResponseWriter, r *http.Request) {
 	} else {
 		responseData.Status = "success"
 		responseData.Data = struct {
-			Book Book `json:"book"`
+			Book model.Book `json:"book"`
 		}{book}
 	}
 
