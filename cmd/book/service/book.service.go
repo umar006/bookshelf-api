@@ -20,7 +20,8 @@ var db *sqlx.DB = dbx.ConnectDB()
 
 func InsertBook(book *model.Book) (sql.Result, error) {
 	book.Id, _ = gonanoid.New()
-	book.Finished = book.PageCount == book.ReadPage
+	isFinished := book.PageCount == book.ReadPage
+	book.Finished = &isFinished
 
 	createBookQuery := `
             INSERT INTO book(id, name, year, author, summary, publisher, page_count, read_page, reading, finished)
@@ -31,7 +32,7 @@ func InsertBook(book *model.Book) (sql.Result, error) {
 	return result, err
 }
 
-func GetAllBooks(queryParams url.Values) (*sqlx.Rows, error) {
+func GetAllBooks(queryParams url.Values) ([]model.Book, error) {
 	var result *sqlx.Rows
 	var err error
 	getBooksQuery := `
@@ -52,10 +53,20 @@ func GetAllBooks(queryParams url.Values) (*sqlx.Rows, error) {
 	}
 
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
-	return result, err
+	var books = []model.Book{}
+	for result.Next() {
+		var book = model.Book{}
+		err = result.StructScan(&book)
+		if err != nil {
+			return nil, err
+		}
+		books = append(books, book)
+	}
+
+	return books, err
 }
 
 func GetBookById(w http.ResponseWriter, r *http.Request) {
