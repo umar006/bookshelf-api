@@ -81,64 +81,31 @@ func GetBookById(bookId string) (*model.Book, error) {
 	return &book, err
 }
 
-func UpdateBookById(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+func UpdateBookById(book *model.Book) (int, error) {
+	isFinished := book.PageCount == book.ReadPage
+	book.Finished = &isFinished
 
-	vars := mux.Vars(r)
-
-	var book map[string]any
-	err := json.NewDecoder(r.Body).Decode(&book)
+	updateBookQuery := `
+        UPDATE book
+        SET name=:name,year=:year,author=:author,summary=:summary,publisher=:publisher,
+            page_count=:page_count,read_page=:read_page,reading=:reading,finished=:finished
+        WHERE id=:id
+    `
+	result, err := db.NamedExec(updateBookQuery, &book)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return 0, err
 	}
 
-	var responseData pkg.Response
-
-	if book["name"] == "" || book["name"] == nil {
-		responseData.Status = "fail"
-		responseData.Message = "Gagal memperbarui buku. Mohon isi nama buku"
-
-		w.WriteHeader(http.StatusBadRequest)
-	} else if book["readPage"].(float64) > book["pageCount"].(float64) {
-		responseData.Status = "fail"
-		responseData.Message = "Gagal memperbarui buku. readPage tidak boleh lebih besar dari pageCount"
-
-		w.WriteHeader(http.StatusBadRequest)
-	} else {
-		book["id"] = vars["bookId"]
-
-		updateBookQuery := `
-            UPDATE book
-            SET name=:name,year=:year,author=:author,summary=:summary,publisher=:publisher,
-                page_count=:pageCount,read_page=:readPage,reading=:reading
-            WHERE id=:id
-        `
-		result, err := db.NamedExec(updateBookQuery, book)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		affectedRow, _ := result.RowsAffected()
-		if affectedRow == 1 {
-			responseData.Status = "success"
-			responseData.Message = "Buku berhasil diperbarui"
-		} else {
-			responseData.Status = "fail"
-			responseData.Message = "Gagal memperbarui buku. Id tidak ditemukan"
-
-			w.WriteHeader(http.StatusNotFound)
-		}
-	}
-
-	jsonData, err := json.Marshal(responseData)
+	affectedRow, err := result.RowsAffected()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return 0, err
 	}
 
-	w.Write(jsonData)
+	if affectedRow != 1 {
+		return 0, nil
+	}
+
+	return 1, nil
 }
 
 func DeleteBookById(w http.ResponseWriter, r *http.Request) {

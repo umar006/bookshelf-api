@@ -114,3 +114,56 @@ func GetBookById(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(jsonData)
 }
+
+func UpdateBookById(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	bookId := mux.Vars(r)["bookId"]
+
+	var book model.Book
+	err := json.NewDecoder(r.Body).Decode(&book)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	book.Id = bookId
+
+	var responseData pkg.Response
+
+	if book.Name == "" {
+		responseData.Status = "fail"
+		responseData.Message = "Gagal memperbarui buku. Mohon isi nama buku"
+
+		w.WriteHeader(http.StatusBadRequest)
+	} else if book.ReadPage > book.PageCount {
+		responseData.Status = "fail"
+		responseData.Message = "Gagal memperbarui buku. readPage tidak boleh lebih besar dari pageCount"
+
+		w.WriteHeader(http.StatusBadRequest)
+	} else {
+		affected, err := service.UpdateBookById(&book)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if affected == 1 {
+			responseData.Status = "success"
+			responseData.Message = "Buku berhasil diperbarui"
+		} else {
+			responseData.Status = "fail"
+			responseData.Message = "Gagal memperbarui buku. Id tidak ditemukan"
+
+			w.WriteHeader(http.StatusNotFound)
+		}
+
+	}
+
+	jsonData, err := json.Marshal(responseData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(jsonData)
+}
