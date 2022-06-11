@@ -69,37 +69,16 @@ func GetAllBooks(queryParams url.Values) ([]model.Book, error) {
 	return books, err
 }
 
-func GetBookById(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-
-	vars := mux.Vars(r)
-
-	var responseData pkg.Response
-
+func GetBookById(bookId string) (*model.Book, error) {
 	var book model.Book
-	err := db.QueryRowx("SELECT * FROM book WHERE id=$1", vars["bookId"]).StructScan(&book)
+	err := db.QueryRowx("SELECT * FROM book WHERE id=$1", bookId).StructScan(&book)
 	if err != nil && err != sql.ErrNoRows {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	} else if err != nil && err == sql.ErrNoRows {
-		responseData.Status = "fail"
-		responseData.Message = "Buku tidak ditemukan"
-
-		w.WriteHeader(http.StatusNotFound)
-	} else {
-		responseData.Status = "success"
-		responseData.Data = struct {
-			Book model.Book `json:"book"`
-		}{book}
+		return nil, nil
 	}
 
-	jsonData, err := json.Marshal(responseData)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Write(jsonData)
+	return &book, err
 }
 
 func UpdateBookById(w http.ResponseWriter, r *http.Request) {

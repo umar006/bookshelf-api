@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/gorilla/mux"
+
 	"umar006/bookshelf-api/cmd/book/model"
 	"umar006/bookshelf-api/cmd/book/service"
 	"umar006/bookshelf-api/pkg"
@@ -70,6 +72,38 @@ func GetAllBooks(w http.ResponseWriter, r *http.Request) {
 		Data: struct {
 			Books []model.Book `json:"books"`
 		}{books},
+	}
+
+	jsonData, err := json.Marshal(responseData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(jsonData)
+}
+
+func GetBookById(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	bookId := mux.Vars(r)["bookId"]
+
+	var responseData pkg.Response
+
+	book, err := service.GetBookById(bookId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else if book == nil {
+		responseData.Status = "fail"
+		responseData.Message = "Buku tidak ditemukan"
+
+		w.WriteHeader(http.StatusNotFound)
+	} else {
+		responseData.Status = "success"
+		responseData.Data = struct {
+			Book *model.Book `json:"book"`
+		}{book}
 	}
 
 	jsonData, err := json.Marshal(responseData)
