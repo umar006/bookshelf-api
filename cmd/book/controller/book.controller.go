@@ -167,3 +167,35 @@ func UpdateBookById(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(jsonData)
 }
+
+func DeleteBookById(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	bookId := mux.Vars(r)["bookId"]
+
+	var responseData pkg.Response
+
+	affected, err := service.DeleteBookById(bookId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if affected == 1 {
+		responseData.Status = "success"
+		responseData.Message = "Buku berhasil dihapus"
+	} else {
+		responseData.Status = "fail"
+		responseData.Message = "Buku gagal dihapus. Id tidak ditemukan"
+
+		w.WriteHeader(http.StatusNotFound)
+	}
+
+	jsonData, err := json.Marshal(responseData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(jsonData)
+}

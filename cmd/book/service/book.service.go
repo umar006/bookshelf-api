@@ -2,18 +2,14 @@ package service
 
 import (
 	"database/sql"
-	"encoding/json"
-	"net/http"
 	"net/url"
 
-	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 
 	"umar006/bookshelf-api/cmd/book/model"
 	dbx "umar006/bookshelf-api/db"
-	"umar006/bookshelf-api/pkg"
 )
 
 var db *sqlx.DB = dbx.ConnectDB()
@@ -108,35 +104,20 @@ func UpdateBookById(book *model.Book) (int, error) {
 	return 1, nil
 }
 
-func DeleteBookById(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-
-	vars := mux.Vars(r)
-
-	result, err := db.Exec("DELETE FROM book WHERE id=$1", vars["bookId"])
+func DeleteBookById(bookId string) (int, error) {
+	result, err := db.Exec("DELETE FROM book WHERE id=$1", bookId)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return 0, err
 	}
 
-	var responseData pkg.Response
-
-	affectedRow, _ := result.RowsAffected()
-	if affectedRow == 1 {
-		responseData.Status = "success"
-		responseData.Message = "Buku berhasil dihapus"
-	} else {
-		responseData.Status = "fail"
-		responseData.Message = "Buku gagal dihapus. Id tidak ditemukan"
-
-		w.WriteHeader(http.StatusNotFound)
-	}
-
-	jsonData, err := json.Marshal(responseData)
+	affectedRow, err := result.RowsAffected()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return 0, err
 	}
 
-	w.Write(jsonData)
+	if affectedRow != 1 {
+		return 0, nil
+	}
+
+	return 1, nil
 }
