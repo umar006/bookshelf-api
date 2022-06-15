@@ -75,7 +75,7 @@ func GetBookById(bookId string) (*model.Book, error) {
 	return &book, err
 }
 
-func UpdateBookById(book *model.Book) (int, error) {
+func UpdateBookById(book *model.Book) (int64, error) {
 	book.InitFinished()
 
 	updateBookQuery := `
@@ -89,16 +89,7 @@ func UpdateBookById(book *model.Book) (int, error) {
 		return 0, err
 	}
 
-	affectedRow, err := result.RowsAffected()
-	if err != nil {
-		return 0, err
-	}
-
-	if affectedRow != 1 {
-		return 0, nil
-	}
-
-	return 1, nil
+	return result.RowsAffected()
 }
 
 func DeleteBookById(bookId string) (int, error) {
