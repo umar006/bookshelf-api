@@ -1,5 +1,7 @@
 package model
 
+import gonanoid "github.com/matoous/go-nanoid/v2"
+
 type Book struct {
 	Id        string `json:"id,omitempty"`
 	Name      string `json:"name,omitempty"`
@@ -13,4 +15,13 @@ type Book struct {
 	Reading   *bool  `json:"reading,omitempty"`
 	CreatedAt string `json:"insertedAt,omitempty" db:"created_at"`
 	UpdatedAt string `json:"updatedAt,omitempty" db:"updated_at"`
+}
+
+func (b *Book) InitId() {
+	b.Id, _ = gonanoid.New()
+}
+
+func (b *Book) InitFinished() {
+	isFinished := b.PageCount == b.ReadPage
+	b.Finished = &isFinished
 }

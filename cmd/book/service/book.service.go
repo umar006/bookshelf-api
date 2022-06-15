@@ -6,7 +6,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 
 	"umar006/bookshelf-api/cmd/book/model"
 	dbx "umar006/bookshelf-api/db"
@@ -15,9 +14,8 @@ import (
 var db *sqlx.DB = dbx.ConnectDB()
 
 func InsertBook(book *model.Book) (sql.Result, error) {
-	book.Id, _ = gonanoid.New()
-	isFinished := book.PageCount == book.ReadPage
-	book.Finished = &isFinished
+	book.InitId()
+	book.InitFinished()
 
 	createBookQuery := `
             INSERT INTO book(id, name, year, author, summary, publisher, page_count, read_page, reading, finished)
@@ -78,8 +76,7 @@ func GetBookById(bookId string) (*model.Book, error) {
 }
 
 func UpdateBookById(book *model.Book) (int, error) {
-	isFinished := book.PageCount == book.ReadPage
-	book.Finished = &isFinished
+	book.InitFinished()
 
 	updateBookQuery := `
         UPDATE book
