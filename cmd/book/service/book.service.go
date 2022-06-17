@@ -95,20 +95,11 @@ func UpdateBookById(book *model.Book) (int64, error) {
 	return result.RowsAffected()
 }
 
-func DeleteBookById(bookId string) (int, error) {
+func DeleteBookById(bookId string) (int64, error) {
 	result, err := db.Exec("DELETE FROM book WHERE id=$1", bookId)
 	if err != nil {
 		return 0, err
 	}
 
-	affectedRow, err := result.RowsAffected()
-	if err != nil {
-		return 0, err
-	}
-
-	if affectedRow != 1 {
-		return 0, nil
-	}
-
-	return 1, nil
+	return result.RowsAffected()
 }
