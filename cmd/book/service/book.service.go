@@ -13,7 +13,7 @@ import (
 
 var db *sqlx.DB = dbx.ConnectDB()
 
-func InsertBook(book *model.Book) (sql.Result, error) {
+func InsertBook(book *model.Book) (int64, error) {
 	book.InitId()
 	book.InitFinished()
 
@@ -22,8 +22,11 @@ func InsertBook(book *model.Book) (sql.Result, error) {
             VALUES (:id, :name, :year, :author, :summary, :publisher, :page_count, :read_page, :reading, :finished)
         `
 	result, err := db.NamedExec(createBookQuery, &book)
+	if err != nil {
+		return 0, err
+	}
 
-	return result, err
+	return result.RowsAffected()
 }
 
 func GetAllBooks(queryParams url.Values) ([]model.Book, error) {
